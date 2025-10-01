@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Task 3 — Responsive + Quiz + Fetch</title>
+  <style>
+   
+    :root{
+      --max-w:1100px;
+      --gap:12px;
+      --card-bg: #ffffff;
+      --accent: #0b7a75;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, Arial, sans-serif;
+      background:#f4f6f8;
+      color:#0f2d2d;
+      line-height:1.4;
+      padding:16px;
+    }
+    .container{
+      max-width:var(--max-w);
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:var(--gap);
+    }
+    header{ text-align:center; padding:10px 0; }
+    h1{ margin:6px 0; font-size:1.4rem; color:var(--accent); }
+    .card{
+      background:var(--card-bg);
+      padding:14px;
+      border-radius:10px;
+      box-shadow: 0 4px 12px rgba(10,20,20,0.04);
+    }
+
+    
+    #q-text{ font-weight:600; margin-bottom:10px; }
+    #choices{ display:flex; flex-direction:column; gap:8px; }
+    button.choice{
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #dbe6e6;
+      background:#f8fafb;
+      text-align:left;
+      cursor:pointer;
+      font-size:0.95rem;
+    }
+    button.choice[disabled]{ opacity:0.7; cursor:default; }
+    button.choice.correct{ outline: 3px solid #8fe0c9; background: #e9f8f4; }
+    button.choice.wrong{ outline: 3px solid #f4b4b4; background: #fff0f0; }
+
+    .controls{ margin-top:10px; display:flex; gap:8px; align-items:center; }
+    .controls button{ padding:8px 12px; border-radius:7px; border:none; cursor:pointer; background:var(--accent); color:white; }
+    .controls button[disabled]{ opacity:0.6; cursor:default; }
+
+   
+    #joke{ min-height:44px; margin-bottom:8px; }
+
+    
+    @media (min-width: 768px){
+      .container{ grid-template-columns: 1fr 380px; align-items:start; }
+      h1{ font-size:1.6rem; }
+    }
+    @media (min-width: 1200px){
+      h1{ font-size:2rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Advanced Styling & JavaScript </h1>
+    <div style="font-size:0.95rem;color:#516f6f">Mobile-first responsive + Quiz + Fetch demo</div>
+  </header>
+
+  <main class="container">
+  
+    <section class="card" id="quiz-section">
+      <h2 style="margin-top:0">Interactive Quiz</h2>
+      <div id="quiz" aria-live="polite">
+        <p id="q-text">Question will appear here</p>
+        <div id="choices" role="list"></div>
+
+        <div class="controls">
+          <button id="nextBtn" disabled>Next</button>
+          <button id="restartBtn" style="display:none; background:#666">Restart</button>
+          <div style="margin-left:auto;color:#2e5b5a;font-weight:600" id="score">Score: 0</div>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:#5a7f7f;margin-top:10px">Tip: choose an answer, then click Next.</p>
+    </section>
+
+    
+    <aside class="card" id="api-section" aria-live="polite">
+      <h2 style="margin-top:0">Fetch: Random Joke (API)</h2>
+      <p id="joke">Click "New joke" to fetch a joke.</p>
+      <div style="display:flex;gap:8px">
+        <button id="newJokeBtn" style="flex:1">New joke</button>
+        <button id="reloadPageBtn" style="background:#ddd;color:#111">Refresh</button>
+      </div>
+      <p style="font-size:0.85rem;color:#556f6f;margin-top:10px">This uses a public joke API (no key required).</p>
+    </aside>
+  </main>
+
+  <script>
+    
+    const questions = [
+      { q: "What is 2 + 2?", options: ["1","2","3","4"], answer: 3 },
+      { q: "Which language runs in the browser?", options: ["Python","C++","JavaScript","Java"], answer: 2 },
+      { q: "HTML stands for?", options: ["Hyper Text Markup Language","Home Tool Markup Language","Hyperlinks Text","None"], answer: 0 },
+      { q: "Which tag makes a paragraph in HTML?", options: ["<div>","<p>","<h1>","<span>"], answer: 1 }
+    ];
+
+    let current = 0;
+    let score = 0;
+
+    const qText = document.getElementById('q-text');
+    const choicesEl = document.getElementById('choices');
+    const nextBtn = document.getElementById('nextBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const scoreEl = document.getElementById('score');
+
+    function renderQuestion(){
+      const q = questions[current];
+      qText.textContent = `${current+1}. ${q.q}`;
+      choicesEl.innerHTML = ''; // clear
+
+      q.options.forEach((opt, i) => {
+        const b = document.createElement('button');
+        b.className = 'choice';
+        b.type = 'button';
+        b.textContent = opt;
+        b.dataset.index = i;
+        b.addEventListener('click', selectChoice);
+        choicesEl.appendChild(b);
+      });
+
+      nextBtn.disabled = true;
+    }
+
+    function selectChoice(e){
+      const btn = e.currentTarget;
+      const chosen = Number(btn.dataset.index);
+     
+      document.querySelectorAll('.choice').forEach(b => b.disabled = true);
+
+      const correct = questions[current].answer;
+      if (chosen === correct) {
+        btn.classList.add('correct');
+        score++;
+      } else {
+        btn.classList.add('wrong');
+        const correctBtn = document.querySelector(`.choice[data-index="${correct}"]`);
+        if (correctBtn) correctBtn.classList.add('correct');
+      }
+      scoreEl.textContent = `Score: ${score}`;
+      nextBtn.disabled = false;
+    }
+
+    nextBtn.addEventListener('click', () => {
+      current++;
+      if (current < questions.length) {
+        renderQuestion();
+      } else {
+       
+        qText.textContent = `Quiz finished — Final score: ${score} / ${questions.length}`;
+        choicesEl.innerHTML = '';
+        nextBtn.disabled = true;
+        restartBtn.style.display = 'inline-block';
+      }
+    });
+
+    restartBtn.addEventListener('click', () => {
+      current = 0;
+      score = 0;
+      scoreEl.textContent = `Score: ${score}`;
+      restartBtn.style.display = 'none';
+      renderQuestion();
+    });
+
+   
+    renderQuestion();
+
+    
+    const jokeEl = document.getElementById('joke');
+    const newJokeBtn = document.getElementById('newJokeBtn');
+    const reloadPageBtn = document.getElementById('reloadPageBtn');
+
+    async function getJoke(){
+      jokeEl.textContent = 'Loading...';
+      try {
+        const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+        if (!res.ok) throw new Error('Network response not OK');
+        const data = await res.json();
+        
+        jokeEl.textContent = `${data.setup} — ${data.punchline}`;
+      } catch (err) {
+        console.error(err);
+        jokeEl.textContent = 'Could not load joke. Check internet or try again.';
+      }
+    }
+
+    newJokeBtn.addEventListener('click', getJoke);
+    reloadPageBtn.addEventListener('click', () => location.reload());
+
+    
+    getJoke();
+
+  </script>
+</body>
+</html>
